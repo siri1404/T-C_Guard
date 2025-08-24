@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T&C Guard</title>
+    <link rel="stylesheet" href="styles/popup.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="popup-container">
+        <header class="popup-header">
+            <div class="site-info">
+                <img id="site-favicon" class="favicon" src="" alt="">
+                <div class="site-details">
+                    <div id="site-domain" class="domain">Analyzing...</div>
+                    <div id="last-checked" class="last-checked">Checking policies...</div>
+                </div>
+            </div>
+            <button id="theme-toggle" class="theme-toggle" title="Toggle theme">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+            </button>
+        </header>
+
+        <main class="popup-content">
+            <div id="loading-state" class="loading-state">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Parsing legal documents...</div>
+            </div>
+
+            <div id="content-state" class="content-state" style="display: none;">
+                <section class="trust-score-section">
+                    <div class="trust-dial-container">
+                        <svg class="trust-dial" width="120" height="60" viewBox="0 0 120 60">
+                            <defs>
+                                <linearGradient id="scoreGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+                                    <stop offset="50%" style="stop-color:#F59E0B;stop-opacity:1" />
+                                    <stop offset="100%" style="stop-color:#14B8A6;stop-opacity:1" />
+                                </linearGradient>
+                            </defs>
+                            <path id="dial-bg" d="M 10 50 A 40 40 0 0 1 110 50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
+                            <path id="dial-progress" d="M 10 50 A 40 40 0 0 1 110 50" fill="none" stroke="url(#scoreGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 126"/>
+                        </svg>
+                        <div class="score-display">
+                            <div id="trust-score" class="score-value">--</div>
+                            <div class="score-label">Trust Score</div>
+                        </div>
+                    </div>
+                    <div id="confidence-indicator" class="confidence-indicator">
+                        <span class="confidence-label">Confidence:</span>
+                        <span id="confidence-value" class="confidence-value">--</span>
+                    </div>
+                </section>
+
+                <section class="summary-section">
+                    <h3 class="section-title">Key Points</h3>
+                    <div id="summary-bullets" class="summary-bullets">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <section id="red-flags-section" class="red-flags-section" style="display: none;">
+                    <h3 class="section-title">Red Flags</h3>
+                    <div id="red-flags-container" class="red-flags-container">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </section>
+
+                <section class="actions-section">
+                    <div class="action-buttons">
+                        <button id="accept-btn" class="action-btn accept-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                            Accept with Caveats
+                        </button>
+                        <button id="reject-btn" class="action-btn reject-btn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                            Reject & Close
+                        </button>
+                    </div>
+                    <div class="secondary-actions">
+                        <button id="alternatives-btn" class="secondary-btn">View Alternatives</button>
+                        <button id="export-btn" class="secondary-btn">Export Report</button>
+                        <button id="full-report-btn" class="secondary-btn">Full Report</button>
+                    </div>
+                </section>
+            </div>
+
+            <div id="no-policy-state" class="no-policy-state" style="display: none;">
+                <div class="no-policy-icon">🪄</div>
+                <div class="no-policy-text">We couldn't find a policy here</div>
+                <div class="no-policy-subtext">Try checking the footer or paste a link directly</div>
+            </div>
+
+            <div id="error-state" class="error-state" style="display: none;">
+                <div class="error-icon">😵</div>
+                <div class="error-text">Legalese monster was too cryptic</div>
+                <div class="error-subtext">Try reloading or switch to Cloud Mode</div>
+                <button id="retry-btn" class="retry-btn">Retry Analysis</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="scripts/popup.js"></script>
+</body>
+</html>

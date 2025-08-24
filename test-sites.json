@@ -1,0 +1,112 @@
+{
+  "testSites": {
+    "privacyPolicies": [
+      {
+        "name": "Google Privacy Policy",
+        "url": "https://policies.google.com/privacy",
+        "expectedScore": "60-70",
+        "expectedFlags": ["data-sharing", "broad-collection"],
+        "notes": "Good test for comprehensive policy analysis"
+      },
+      {
+        "name": "Facebook Data Policy", 
+        "url": "https://www.facebook.com/privacy/policy/",
+        "expectedScore": "40-60",
+        "expectedFlags": ["data-selling", "tracking", "broad-license"],
+        "notes": "Should trigger multiple red flags"
+      },
+      {
+        "name": "GitHub Privacy Statement",
+        "url": "https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement",
+        "expectedScore": "75-85", 
+        "expectedFlags": ["minimal"],
+        "notes": "Generally privacy-friendly policy"
+      },
+      {
+        "name": "Twitter Privacy Policy",
+        "url": "https://twitter.com/en/privacy",
+        "expectedScore": "50-65",
+        "expectedFlags": ["data-sharing", "tracking"],
+        "notes": "Moderate privacy concerns"
+      },
+      {
+        "name": "Stripe Privacy Policy",
+        "url": "https://stripe.com/privacy",
+        "expectedScore": "70-80",
+        "expectedFlags": ["data-sharing"],
+        "notes": "Business-focused, generally reasonable"
+      }
+    ],
+    "termsOfService": [
+      {
+        "name": "Discord Terms of Service",
+        "url": "https://discord.com/terms",
+        "expectedScore": "55-70",
+        "expectedFlags": ["arbitration", "content-license"],
+        "notes": "Common ToS issues"
+      },
+      {
+        "name": "Zoom Terms of Service", 
+        "url": "https://zoom.us/terms",
+        "expectedScore": "60-75",
+        "expectedFlags": ["arbitration"],
+        "notes": "Business service terms"
+      }
+    ],
+    "noPolicyPages": [
+      {
+        "name": "Google Homepage",
+        "url": "https://www.google.com",
+        "expected": "no-policy-state",
+        "notes": "Should show 'no policy found' message"
+      },
+      {
+        "name": "GitHub Homepage",
+        "url": "https://github.com",
+        "expected": "no-policy-state", 
+        "notes": "Should detect policy links in footer"
+      }
+    ]
+  },
+  "testScenarios": [
+    {
+      "name": "First Time User",
+      "steps": [
+        "Install extension",
+        "Visit privacy policy page",
+        "Check auto-detection badge appears",
+        "Click extension icon",
+        "Verify popup loads with analysis"
+      ]
+    },
+    {
+      "name": "Cache Testing",
+      "steps": [
+        "Visit policy page first time",
+        "Note analysis time",
+        "Refresh page or revisit",
+        "Verify faster load from cache",
+        "Check 'Last checked' timestamp"
+      ]
+    },
+    {
+      "name": "Export Functionality",
+      "steps": [
+        "Complete analysis on policy page",
+        "Click 'Export Report' button", 
+        "Verify clipboard contains formatted report",
+        "Check button shows success feedback"
+      ]
+    },
+    {
+      "name": "Red Flag Interaction",
+      "steps": [
+        "Find policy with red flags",
+        "Click on red flag card",
+        "Verify modal opens with details",
+        "Check evidence quotes display",
+        "Test modal close functionality"
+      ]
+    }
+  ]
+}
