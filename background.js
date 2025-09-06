@@ -29,9 +29,10 @@ class SecureBackgroundService {
 
     async handleMessage(request, sender, sendResponse) {
         try {
-            // Validate sender
-            if (!sender.tab || !sender.tab.url) {
-                throw new Error('Invalid message sender');
+            // Validate sender - allow messages from extension popup
+            if (!sender.tab && !sender.url) {
+                // Allow messages from extension popup/background
+                console.log('Message from extension context');
             }
 
             switch (request.action) {
@@ -87,6 +88,17 @@ class SecureBackgroundService {
                 throw new Error('Invalid URL provided');
             }
             
+            // Get current active tab if sender doesn't have tab info
+            let tabId = sender.tab?.id;
+            if (!tabId) {
+                const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                tabId = activeTab?.id;
+            }
+            
+            if (!tabId) {
+                throw new Error('No active tab found');
+            }
+            
             // Check cache first
             const cacheKey = await this.generateCacheKey(request.url);
             const cached = await this.getCachedAnalysis(cacheKey);
@@ -97,21 +109,71 @@ class SecureBackgroundService {
             }
 
             // Extract content securely
-            const content = await this.extractPageContentSecurely(sender.tab.id);
+            const content = await this.extractPageContentSecurely(tabId);
             if (!content) {
-                throw new Error('NO_POLICY');
+                // Try alternative extraction method
+                const alternativeContent = await this.extractContentAlternative(tabId, request.url);
+                if (!alternativeContent) {
+                    throw new Error('NO_POLICY');
+                }
+                return this.handleContentAnalysis(alternativeContent, request.url, cacheKey, sendResponse);
             }
 
+            return this.handleContentAnalysis(content, request.url, cacheKey, sendResponse);
+        } catch (error) {
+            console.error('Analysis request error:', error);
+            sendResponse({ 
+                success: false, 
+                error: error.message || 'ANALYSIS_FAILED' 
+            });
+        }
+    }
+
+    async handleContentAnalysis(content, url, cacheKey, sendResponse) {
+        try {
             // Analyze content
-            const analysis = await this.performSecureAnalysis(content, request.url);
+            const analysis = await this.performSecureAnalysis(content, url);
             
             // Cache results securely
             await this.cacheAnalysisSecurely(cacheKey, analysis);
 
             sendResponse({ success: true, data: analysis });
         } catch (error) {
-            console.error('Analysis request error:', error);
-            throw error;
+            console.error('Content analysis error:', error);
+            sendResponse({ 
+                success: false, 
+                error: 'ANALYSIS_FAILED' 
+            });
+        }
+    }
+
+    async extractContentAlternative(tabId, url) {
+        try {
+            // Alternative method: get page content directly
+            const results = await chrome.scripting.executeScript({
+                target: { tabId },
+                function: () => {
+                    // Simple content extraction
+                    const content = document.body.innerText || document.body.textContent || '';
+                    return {
+                        isPolicyPage: true,
+                        content: content.slice(0, 500000), // 500KB limit
+                        url: window.location.href,
+                        title: document.title,
+                        extractedAt: new Date().toISOString()
+                    };
+                }
+            });
+
+            const extracted = results[0]?.result;
+            if (!extracted || extracted.content.length < 100) {
+                return null;
+            }
+
+            return extracted;
+        } catch (error) {
+            console.error('Alternative extraction error:', error);
+            return null;
         }
     }
 
@@ -162,9 +224,8 @@ class SecureBackgroundService {
                 headings.some(h => h.includes(keyword))
             );
 
-            if (!isPolicyPage) {
-                return null;
-            }
+            // Don't require policy page detection - analyze any page
+            console.log('Extracting content from:', url);
 
             // Extract text content safely
             const content = document.body.innerText || document.body.textContent || '';
@@ -172,12 +233,12 @@ class SecureBackgroundService {
             // Limit content size for security
             const limitedContent = content.slice(0, 500000); // 500KB limit
             
-            if (limitedContent.length < 500) {
+            if (limitedContent.length < 100) {
                 return null;
             }
 
             return {
-                isPolicyPage: true,
+                isPolicyPage: isPolicyPage,
                 content: limitedContent,
                 url: window.location.href,
                 title: document.title,
