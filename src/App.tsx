@@ -172,10 +172,10 @@ function App() {
         {/* Background Pattern */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(20,184,166,0.1)_0%,transparent_50%)] pointer-events-none" />
         
-        <div className="relative">
+        <div className="relative min-w-full">
           {/* Header */}
           <header className="border-b border-white/10 bg-black/20 backdrop-blur-sm">
-            <div className="max-w-6xl mx-auto px-4 py-6">
+            <div className="w-full max-w-6xl mx-auto px-4 py-6 min-w-0">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl shadow-lg shadow-teal-500/25">
                   <Shield className="w-6 h-6 text-white" />
@@ -189,23 +189,23 @@ function App() {
           </header>
 
           {/* Main Content */}
-          <main className="max-w-6xl mx-auto px-4 py-8">
+          <main className="w-full max-w-6xl mx-auto px-4 py-8 min-w-0">
             {!analysisResult && !isAnalyzing && !error && (
               <div className="text-center mb-12">
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-teal-500/20 to-teal-600/20 rounded-2xl mb-6 border border-teal-500/30">
                   <Search className="w-10 h-10 text-teal-400" />
                 </div>
-                <h2 className="text-3xl font-bold text-white mb-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                   Policy Analysis Demo
                 </h2>
-                <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-8">
+                <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mb-8 px-4">
                   Enter any policy URL to see how our analysis works. This demo generates realistic analysis results to showcase the full functionality.
                 </p>
                 
                 
                 
                 {/* Feature highlights */}
-                <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12 px-4">
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
                     <div className="w-12 h-12 bg-teal-500/20 rounded-lg flex items-center justify-center mb-4 mx-auto">
                       <BarChart3 className="w-6 h-6 text-teal-400" />
@@ -263,7 +263,7 @@ function App() {
 
           {/* Footer */}
           <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm mt-16">
-            <div className="max-w-6xl mx-auto px-4 py-8">
+            <div className="w-full max-w-6xl mx-auto px-4 py-8 min-w-0">
               <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="flex items-center gap-2 text-slate-400">
                   <Shield className="w-4 h-4" />
