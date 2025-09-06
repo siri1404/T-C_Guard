@@ -120,11 +120,10 @@ function App() {
         } else {
           setError('Analysis failed. Please try again or check if the URL is accessible.');
         }
-      } finally {
-        setIsAnalyzing(false);
       }
     } catch (error) {
       console.error('Outer analysis error:', error);
+    } finally {
       setIsAnalyzing(false);
     }
   };
