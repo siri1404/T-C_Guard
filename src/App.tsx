@@ -13,15 +13,47 @@ import { PolicyAnalyzer } from './services/PolicyAnalyzer';
 import { UrlExtractor } from './services/UrlExtractor';
 import type { AnalysisResult } from './types/analysis';
 
+// Check if running in Chrome extension environment
+const isExtensionEnvironment = typeof window !== 'undefined' && 
+  window.chrome && 
+  window.chrome.storage;
+
+// Mock services for non-extension environment
+class MockConsentManager {
+  static getInstance() { return new MockConsentManager(); }
+  async hasValidConsent() { return true; }
+  async getConsent() { return { analytics: false, dataCollection: true, storage: true }; }
+  async saveConsent() { return; }
+}
+
+class MockEncryptionService {
+  static getInstance() { return new MockEncryptionService(); }
+  async initializeKey() { return; }
+  async encrypt(data: string) { return data; }
+  async decrypt(data: string) { return data; }
+}
+
+class MockErrorReporting {
+  static getInstance() { return new MockErrorReporting(); }
+  async initialize() { return; }
+  reportError() { return; }
+}
+
 function App() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>('');
   const [showConsentDialog, setShowConsentDialog] = useState(false);
-  const [consentManager] = useState(() => ConsentManager.getInstance());
-  const [encryptionService] = useState(() => EncryptionService.getInstance());
-  const [errorReporting] = useState(() => ErrorReporting.getInstance());
+  const [consentManager] = useState(() => 
+    isExtensionEnvironment ? ConsentManager.getInstance() : new MockConsentManager()
+  );
+  const [encryptionService] = useState(() => 
+    isExtensionEnvironment ? EncryptionService.getInstance() : new MockEncryptionService()
+  );
+  const [errorReporting] = useState(() => 
+    isExtensionEnvironment ? ErrorReporting.getInstance() : new MockErrorReporting()
+  );
 
   React.useEffect(() => {
     initializeServices();
