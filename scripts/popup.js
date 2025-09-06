@@ -22,12 +22,9 @@ class PopupController {
         const domain = new URL(tab.url).hostname;
         document.getElementById('site-domain').textContent = domain;
         
-        // Set favicon
+        // Hide favicon since chrome://favicon/ is not allowed in extensions
         const favicon = document.getElementById('site-favicon');
-        favicon.src = `chrome://favicon/${tab.url}`;
-        favicon.onerror = () => {
-            favicon.style.display = 'none';
-        };
+        favicon.style.display = 'none';
     }
 
     setupEventListeners() {
