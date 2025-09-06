@@ -21,20 +21,30 @@ class PopupController {
     updateSiteInfo(tab) {
         const domain = new URL(tab.url).hostname;
         document.getElementById('site-domain').textContent = domain;
-        
-        // Hide favicon since chrome://favicon/ is not allowed in extensions
-        const favicon = document.getElementById('site-favicon');
-        favicon.style.display = 'none';
     }
 
     setupEventListeners() {
-        document.getElementById('theme-toggle').addEventListener('click', this.toggleTheme.bind(this));
-        document.getElementById('accept-btn').addEventListener('click', this.handleAccept.bind(this));
-        document.getElementById('reject-btn').addEventListener('click', this.handleReject.bind(this));
-        document.getElementById('alternatives-btn').addEventListener('click', this.showAlternatives.bind(this));
-        document.getElementById('export-btn').addEventListener('click', this.exportReport.bind(this));
-        document.getElementById('full-report-btn').addEventListener('click', this.openFullReport.bind(this));
-        document.getElementById('retry-btn')?.addEventListener('click', this.retryAnalysis.bind(this));
+        // Add null checks for all event listeners
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) themeToggle.addEventListener('click', this.toggleTheme.bind(this));
+        
+        const acceptBtn = document.getElementById('accept-btn');
+        if (acceptBtn) acceptBtn.addEventListener('click', this.handleAccept.bind(this));
+        
+        const rejectBtn = document.getElementById('reject-btn');
+        if (rejectBtn) rejectBtn.addEventListener('click', this.handleReject.bind(this));
+        
+        const alternativesBtn = document.getElementById('alternatives-btn');
+        if (alternativesBtn) alternativesBtn.addEventListener('click', this.showAlternatives.bind(this));
+        
+        const exportBtn = document.getElementById('export-btn');
+        if (exportBtn) exportBtn.addEventListener('click', this.exportReport.bind(this));
+        
+        const fullReportBtn = document.getElementById('full-report-btn');
+        if (fullReportBtn) fullReportBtn.addEventListener('click', this.openFullReport.bind(this));
+        
+        const retryBtn = document.getElementById('retry-btn');
+        if (retryBtn) retryBtn.addEventListener('click', this.retryAnalysis.bind(this));
     }
 
     showLoadingState() {
@@ -101,33 +111,39 @@ class PopupController {
         const trustScore = scores.aggregate;
         const confidence = Math.round(scores.confidence * 100);
 
-        // Update score display
-        document.getElementById('trust-score').textContent = trustScore;
-        document.getElementById('confidence-value').textContent = `${confidence}%`;
+        // Update score display with null checks
+        const trustScoreEl = document.getElementById('trust-score');
+        if (trustScoreEl) trustScoreEl.textContent = trustScore;
+        
+        const confidenceEl = document.getElementById('confidence-value');
+        if (confidenceEl) confidenceEl.textContent = `${confidence}%`;
 
         // Animate dial
         const dialProgress = document.getElementById('dial-progress');
-        const circumference = 126; // Approximate arc length for semicircle
-        const progress = (trustScore / 100) * circumference;
-        
-        setTimeout(() => {
-            dialProgress.style.strokeDasharray = `${progress} ${circumference}`;
-        }, 500);
+        if (dialProgress) {
+            const circumference = 126; // Approximate arc length for semicircle
+            const progress = (trustScore / 100) * circumference;
+            
+            setTimeout(() => {
+                dialProgress.style.strokeDasharray = `${progress} ${circumference}`;
+            }, 500);
 
-        // Update dial color based on score
-        const scoreGradient = document.getElementById('scoreGradient');
-        if (trustScore >= 75) {
-            dialProgress.style.stroke = '#22C55E';
-        } else if (trustScore >= 50) {
-            dialProgress.style.stroke = '#F59E0B';
-        } else {
-            dialProgress.style.stroke = '#EF4444';
+            // Update dial color based on score
+            if (trustScore >= 75) {
+                dialProgress.style.stroke = '#22C55E';
+            } else if (trustScore >= 50) {
+                dialProgress.style.stroke = '#F59E0B';
+            } else {
+                dialProgress.style.stroke = '#EF4444';
+            }
         }
     }
 
     renderSummary() {
         const { summary } = this.analysisData;
         const container = document.getElementById('summary-bullets');
+        
+        if (!container) return;
         
         container.innerHTML = summary.map(item => `
             <div class="summary-bullet" data-evidence='${JSON.stringify(item.evidence || [])}'>
@@ -157,7 +173,8 @@ class PopupController {
         const section = document.getElementById('red-flags-section');
         const container = document.getElementById('red-flags-container');
         
-        section.style.display = 'block';
+        if (section) section.style.display = 'block';
+        if (!container) return;
         
         container.innerHTML = redFlags.map(flag => `
             <div class="red-flag-card" data-flag-id="${flag.id}">
@@ -209,7 +226,8 @@ class PopupController {
             minute: '2-digit',
             hour12: true 
         });
-        document.getElementById('last-checked').textContent = `Last checked: ${timeStr}`;
+        const lastCheckedEl = document.getElementById('last-checked');
+        if (lastCheckedEl) lastCheckedEl.textContent = `Last checked: ${timeStr}`;
     }
 
     showEvidence(evidence) {
