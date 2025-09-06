@@ -1,4 +1,9 @@
 import React, { useState } from 'react';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import ConsentDialog from './components/ConsentDialog';
+import { ConsentManager } from './services/ConsentManager';
+import { EncryptionService } from './services/EncryptionService';
+import { ErrorReporting } from './services/ErrorReporting';
 import { Shield, Search, ExternalLink, AlertTriangle, CheckCircle, XCircle, Download, Copy, BarChart3 } from 'lucide-react';
 import UrlInput from './components/UrlInput';
 import AnalysisResults from './components/AnalysisResults';
@@ -13,8 +18,74 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentUrl, setCurrentUrl] = useState<string>('');
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [consentManager] = useState(() => ConsentManager.getInstance());
+  const [encryptionService] = useState(() => EncryptionService.getInstance());
+  const [errorReporting] = useState(() => ErrorReporting.getInstance());
+
+  React.useEffect(() => {
+    initializeServices();
+  }, []);
+
+  const initializeServices = async () => {
+    try {
+      // Initialize encryption
+      await encryptionService.initializeKey();
+      
+      // Check consent
+      const hasConsent = await consentManager.hasValidConsent();
+      if (!hasConsent) {
+        setShowConsentDialog(true);
+      } else {
+        // Initialize error reporting if analytics enabled
+        const consent = await consentManager.getConsent();
+        if (consent?.analytics) {
+          await errorReporting.initialize(true);
+        }
+      }
+    } catch (error) {
+      console.error('Service initialization error:', error);
+    }
+  };
+
+  const handleConsentAccept = async (options: { analytics: boolean }) => {
+    try {
+      const consent = {
+        dataCollection: true,
+        analytics: options.analytics,
+        storage: true,
+        consentDate: new Date().toISOString(),
+        version: '1.0.0'
+      };
+      
+      await consentManager.saveConsent(consent);
+      
+      if (options.analytics) {
+        await errorReporting.initialize(true);
+      }
+      
+      setShowConsentDialog(false);
+    } catch (error) {
+      console.error('Consent save error:', error);
+      errorReporting.reportError(error as Error, { action: 'consent_save' });
+    }
+  };
+
+  const handleConsentDecline = () => {
+    setShowConsentDialog(false);
+    // Show limited functionality message
+    setError('T&C Guard requires consent to analyze policies. Please refresh and accept to use the extension.');
+  };
 
   const handleAnalyze = async (url: string) => {
+    try {
+      // Check consent first
+      const hasConsent = await consentManager.hasValidConsent();
+      if (!hasConsent) {
+        setShowConsentDialog(true);
+        return;
+      }
+
     setIsAnalyzing(true);
     setError(null);
     setAnalysisResult(null);
@@ -36,6 +107,12 @@ function App() {
       setAnalysisResult(result);
     } catch (err: any) {
       console.error('Analysis error:', err);
+      errorReporting.reportError(err, {
+        action: 'analyze_policy',
+        url: url,
+        timestamp: new Date().toISOString()
+      });
+      
       if (err.message === 'NO_POLICY') {
         setError('No policy content found at this URL. Please check the link or try a direct link to the privacy policy or terms of service.');
       } else if (err.message === 'FETCH_ERROR') {
@@ -55,6 +132,7 @@ function App() {
   };
 
   return (
+    <ErrorBoundary>
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(20,184,166,0.1)_0%,transparent_50%)] pointer-events-none" />
@@ -165,7 +243,15 @@ function App() {
           </div>
         </footer>
       </div>
+      
+      {showConsentDialog && (
+        <ConsentDialog
+          onAccept={handleConsentAccept}
+          onDecline={handleConsentDecline}
+        />
+      )}
     </div>
+    </ErrorBoundary>
   );
 }
 

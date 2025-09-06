@@ -8,6 +8,10 @@
     "scripting",
     "storage"
   ],
+  "host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "action": {
     "default_popup": "popup.html",
     "default_title": "Analyze Terms & Privacy Policies"
@@ -30,8 +34,11 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["popup.html", "sidepanel.html"],
+      "resources": ["popup.html"],
       "matches": ["<all_urls>"]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:;"
+  }
 }
