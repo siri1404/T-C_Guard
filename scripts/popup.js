@@ -2,10 +2,12 @@ class PopupController {
     constructor() {
         this.currentTab = null;
         this.analysisData = null;
+        this.currentTheme = 'dark'; // Default theme
         this.init();
     }
 
     async init() {
+        await this.loadTheme();
         await this.getCurrentTab();
         this.setupEventListeners();
         this.showLoadingState();
@@ -18,9 +20,43 @@ class PopupController {
         this.updateSiteInfo(tab);
     }
 
+    async loadTheme() {
+        try {
+            const result = await chrome.storage.local.get(['theme']);
+            this.currentTheme = result.theme || 'dark';
+            this.applyTheme(this.currentTheme);
+        } catch (error) {
+            console.error('Theme loading error:', error);
+            this.currentTheme = 'dark';
+            this.applyTheme(this.currentTheme);
+        }
+    }
+
+    applyTheme(theme) {
+        document.body.className = `theme-${theme}`;
+        
+        // Update theme toggle icon
+        const themeToggle = document.getElementById('theme-toggle');
+        if (themeToggle) {
+            const icon = themeToggle.querySelector('svg');
+            if (theme === 'dark') {
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+            } else {
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+            }
+        }
+    }
+
     updateSiteInfo(tab) {
-        const domain = new URL(tab.url).hostname;
-        document.getElementById('site-domain').textContent = domain;
+        try {
+            const domain = new URL(tab.url).hostname;
+            const domainEl = document.getElementById('site-domain');
+            if (domainEl) {
+                domainEl.textContent = domain;
+            }
+        } catch (error) {
+            console.error('Site info update error:', error);
+        }
     }
 
     setupEventListeners() {
@@ -76,11 +112,16 @@ class PopupController {
 
     async analyzeCurrentPage() {
         try {
+            console.log('Starting analysis for:', this.currentTab.url);
+            
             // Request analysis from background script
             const response = await chrome.runtime.sendMessage({
                 action: 'analyzePage',
-                url: this.currentTab.url
+                url: this.currentTab.url,
+                tabId: this.currentTab.id
             });
+
+            console.log('Analysis response:', response);
 
             if (response.success) {
                 this.analysisData = response.data;
@@ -100,6 +141,7 @@ class PopupController {
     renderAnalysis() {
         if (!this.analysisData) return;
 
+        console.log('Rendering analysis:', this.analysisData);
         this.showContentState();
         this.renderTrustScore();
         this.renderSummary();
@@ -332,9 +374,16 @@ class PopupController {
         });
     }
 
-    toggleTheme() {
-        // Theme toggle placeholder - would implement full theme switching
-        console.log('Theme toggle clicked');
+    async toggleTheme() {
+        try {
+            this.currentTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+            this.applyTheme(this.currentTheme);
+            
+            // Save theme preference
+            await chrome.storage.local.set({ theme: this.currentTheme });
+        } catch (error) {
+            console.error('Theme toggle error:', error);
+        }
     }
 
     handleAccept() {

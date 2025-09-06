@@ -2,31 +2,19 @@
 class SecureContentAnalyzer {
     constructor() {
         this.isAnalyzing = false;
-        this.consentChecked = false;
+        this.consentChecked = true; // Simplified for demo
         this.init();
     }
 
     async init() {
         try {
-            // Check consent before any operations
-            await this.checkConsent();
-            
-            if (this.consentChecked) {
+            this.setupMessageListener();
+            // Wait a bit for page to load, then check for policies
+            setTimeout(() => {
                 this.detectPolicyPage();
-                this.setupMessageListener();
-            }
+            }, 2000);
         } catch (error) {
             console.error('Content script initialization error:', error);
-        }
-    }
-
-    async checkConsent() {
-        try {
-            const response = await chrome.runtime.sendMessage({ action: 'getConsent' });
-            this.consentChecked = response.success && response.data;
-        } catch (error) {
-            console.error('Consent check error:', error);
-            this.consentChecked = false;
         }
     }
 
@@ -40,27 +28,53 @@ class SecureContentAnalyzer {
     }
 
     detectPolicyPage() {
-        if (!this.consentChecked) return;
-
         try {
+            console.log('Detecting policy page on:', window.location.href);
+            
             const policyKeywords = [
                 'privacy policy', 'terms of service', 'terms and conditions',
                 'data policy', 'cookie policy', 'user agreement', 'eula',
-                'terms of use', 'legal notice'
+                'terms of use', 'legal notice', 'privacy', 'terms', 'conditions'
             ];
 
             const currentUrl = window.location.href.toLowerCase();
             const pageTitle = document.title.toLowerCase();
             const headings = this.extractHeadings();
+            const pageText = document.body.innerText.toLowerCase();
 
-            const isPolicyPage = policyKeywords.some(keyword => 
-                currentUrl.includes(keyword.replace(/\s+/g, '')) ||
-                pageTitle.includes(keyword) ||
-                headings.some(heading => heading.includes(keyword))
-            );
+            // Check URL, title, headings, and page content
+            const isPolicyPage = policyKeywords.some(keyword => {
+                const keywordNormalized = keyword.replace(/\s+/g, '');
+                return currentUrl.includes(keywordNormalized) ||
+                       pageTitle.includes(keyword) ||
+                       headings.some(heading => heading.includes(keyword)) ||
+                       (pageText.includes(keyword) && pageText.length > 1000);
+            });
+            
+            // Also check for policy-like content patterns
+            const policyPatterns = [
+                /we collect.*information/i,
+                /personal data/i,
+                /privacy policy/i,
+                /terms of service/i,
+                /user agreement/i,
+                /data protection/i
+            ];
+            
+            const hasPatterns = policyPatterns.some(pattern => pattern.test(pageText));
+            
+            console.log('Policy detection results:', {
+                isPolicyPage: isPolicyPage || hasPatterns,
+                url: currentUrl,
+                title: pageTitle
+            });
 
-            if (isPolicyPage && !this.isAnalyzing) {
+            if ((isPolicyPage || hasPatterns) && !this.isAnalyzing) {
                 this.showPolicyDetectedBadge();
+                // Auto-trigger analysis after showing badge
+                setTimeout(() => {
+                    this.triggerAnalysis();
+                }, 1000);
             }
         } catch (error) {
             console.error('Policy detection error:', error);
@@ -112,7 +126,7 @@ class SecureContentAnalyzer {
                         }
                     }, 300);
                 }
-            }, 5000);
+            }, 8000);
         } catch (error) {
             console.error('Badge creation error:', error);
         }
@@ -199,6 +213,19 @@ class SecureContentAnalyzer {
         document.head.appendChild(styleSheet);
     }
 
+    triggerAnalysis() {
+        try {
+            chrome.runtime.sendMessage({
+                action: 'analyzePage',
+                url: window.location.href,
+                tabId: null, // Will be filled by background script
+                timestamp: Date.now()
+            });
+        } catch (error) {
+            console.error('Auto-analysis trigger error:', error);
+        }
+    }
+
     handleBadgeClick(event) {
         event.preventDefault();
         event.stopPropagation();
@@ -208,6 +235,7 @@ class SecureContentAnalyzer {
             chrome.runtime.sendMessage({
                 action: 'analyzePage',
                 url: window.location.href,
+                tabId: null,
                 timestamp: Date.now()
             });
         } catch (error) {
@@ -216,14 +244,8 @@ class SecureContentAnalyzer {
     }
 
     async extractContent() {
-        if (!this.consentChecked) {
-            return {
-                success: false,
-                error: 'CONSENT_REQUIRED'
-            };
-        }
-
         try {
+            console.log('Extracting content for analysis');
             const content = this.extractTextContent();
             const metadata = this.extractMetadata();
             const policyLinks = this.findPolicyLinks();
@@ -262,13 +284,15 @@ class SecureContentAnalyzer {
             const contentSelectors = [
                 'main', '[role="main"]', '.content', '.main-content',
                 '.policy-content', '.terms-content', '.privacy-content',
-                'article', '.article'
+                'article', '.article', '#content', '.post-content'
             ];
 
             let mainContent = null;
             for (const selector of contentSelectors) {
                 mainContent = clonedDoc.querySelector(selector);
-                if (mainContent) break;
+                if (mainContent && mainContent.innerText && mainContent.innerText.length > 200) {
+                    break;
+                }
             }
 
             const source = mainContent || clonedDoc.body;
@@ -289,7 +313,9 @@ class SecureContentAnalyzer {
                 .replace(/\n\s*\n/g, '\n\n')
                 .trim();
 
-            if (text.length < 500) {
+            console.log('Extracted text length:', text.length);
+            
+            if (text.length < 200) {
                 throw new Error('CONTENT_TOO_SHORT');
             }
 

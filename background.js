@@ -88,15 +88,10 @@ class SecureBackgroundService {
                 throw new Error('Invalid URL provided');
             }
             
-            // Get current active tab if sender doesn't have tab info
-            let tabId = sender.tab?.id;
+            // Get tab ID from sender or request
+            const tabId = sender.tab?.id || request.tabId;
             if (!tabId) {
-                const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                tabId = activeTab?.id;
-            }
-            
-            if (!tabId) {
-                throw new Error('No active tab found');
+                throw new Error('No tab ID provided');
             }
             
             // Check cache first
@@ -109,17 +104,18 @@ class SecureBackgroundService {
             }
 
             // Extract content securely
-            const content = await this.extractPageContentSecurely(tabId);
-            if (!content) {
-                // Try alternative extraction method
-                const alternativeContent = await this.extractContentAlternative(tabId, request.url);
-                if (!alternativeContent) {
-                    throw new Error('NO_POLICY');
-                }
-                return this.handleContentAnalysis(alternativeContent, request.url, cacheKey, sendResponse);
+            let content = await this.extractPageContentSecurely(tabId);
+            
+            // Try alternative method if first fails
+            if (!content || !content.content || content.content.length < 100) {
+                content = await this.extractContentAlternative(tabId, request.url);
+            }
+            
+            if (!content || !content.content || content.content.length < 100) {
+                throw new Error('NO_POLICY');
             }
 
-            return this.handleContentAnalysis(content, request.url, cacheKey, sendResponse);
+            await this.handleContentAnalysis(content, request.url, cacheKey, sendResponse);
         } catch (error) {
             console.error('Analysis request error:', error);
             sendResponse({ 
@@ -149,24 +145,51 @@ class SecureBackgroundService {
 
     async extractContentAlternative(tabId, url) {
         try {
-            // Alternative method: get page content directly
+            console.log('Trying alternative content extraction for tab:', tabId);
             const results = await chrome.scripting.executeScript({
                 target: { tabId },
-                function: () => {
-                    // Simple content extraction
-                    const content = document.body.innerText || document.body.textContent || '';
-                    return {
-                        isPolicyPage: true,
-                        content: content.slice(0, 500000), // 500KB limit
-                        url: window.location.href,
-                        title: document.title,
-                        extractedAt: new Date().toISOString()
-                    };
+                func: () => {
+                    try {
+                        // Get all text content from the page
+                        let content = '';
+                        
+                        // Try main content areas first
+                        const mainSelectors = ['main', '[role="main"]', '.content', '.main-content', 'article'];
+                        let mainElement = null;
+                        
+                        for (const selector of mainSelectors) {
+                            mainElement = document.querySelector(selector);
+                            if (mainElement) break;
+                        }
+                        
+                        if (mainElement) {
+                            content = mainElement.innerText || mainElement.textContent || '';
+                        } else {
+                            content = document.body.innerText || document.body.textContent || '';
+                        }
+                        
+                        // Clean up content
+                        content = content.replace(/\s+/g, ' ').trim();
+                        
+                        console.log('Extracted content length:', content.length);
+                        
+                        return {
+                            isPolicyPage: true,
+                            content: content.slice(0, 500000), // 500KB limit
+                            url: window.location.href,
+                            title: document.title,
+                            extractedAt: new Date().toISOString()
+                        };
+                    } catch (error) {
+                        console.error('Content extraction error:', error);
+                        return null;
+                    }
                 }
             });
-
             const extracted = results[0]?.result;
-            if (!extracted || extracted.content.length < 100) {
+            console.log('Alternative extraction result:', extracted ? 'success' : 'failed');
+            
+            if (!extracted || !extracted.content || extracted.content.length < 50) {
                 return null;
             }
 
@@ -179,13 +202,16 @@ class SecureBackgroundService {
 
     async extractPageContentSecurely(tabId) {
         try {
+            console.log('Extracting content from tab:', tabId);
             // Only execute predefined, safe extraction function
             const results = await chrome.scripting.executeScript({
                 target: { tabId },
-                function: this.safeContentExtractor
+                func: this.safeContentExtractor
             });
 
             const extracted = results[0]?.result;
+            console.log('Safe extraction result:', extracted ? 'success' : 'failed');
+            
             if (!extracted) return null;
 
             // Sanitize extracted content
@@ -206,40 +232,44 @@ class SecureBackgroundService {
     // Safe content extraction function (no external input)
     safeContentExtractor() {
         try {
-            const policyKeywords = [
-                'privacy policy', 'terms of service', 'terms and conditions',
-                'data policy', 'cookie policy', 'user agreement', 'eula'
-            ];
-
-            const url = window.location.href.toLowerCase();
-            const title = document.title.toLowerCase();
-            const headings = Array.from(document.querySelectorAll('h1, h2, h3'))
-                .map(h => h.textContent.toLowerCase())
-                .slice(0, 10); // Limit headings
-
-            // Check if current page is likely a policy page
-            const isPolicyPage = policyKeywords.some(keyword => 
-                url.includes(keyword.replace(/\s/g, '')) || 
-                title.includes(keyword) ||
-                headings.some(h => h.includes(keyword))
-            );
-
-            // Don't require policy page detection - analyze any page
-            console.log('Extracting content from:', url);
+            console.log('Safe content extractor running on:', window.location.href);
 
             // Extract text content safely
-            const content = document.body.innerText || document.body.textContent || '';
+            let content = '';
+            
+            // Try to get content from main areas first
+            const contentSelectors = [
+                'main', '[role="main"]', '.content', '.main-content', 
+                '.policy-content', '.terms-content', '.privacy-content',
+                'article', '.article', '#content'
+            ];
+            
+            let mainContent = null;
+            for (const selector of contentSelectors) {
+                mainContent = document.querySelector(selector);
+                if (mainContent && mainContent.innerText && mainContent.innerText.length > 100) {
+                    break;
+                }
+            }
+            
+            if (mainContent) {
+                content = mainContent.innerText || mainContent.textContent || '';
+            } else {
+                content = document.body.innerText || document.body.textContent || '';
+            }
             
             // Limit content size for security
-            const limitedContent = content.slice(0, 500000); // 500KB limit
+            content = content.replace(/\s+/g, ' ').trim().slice(0, 500000); // 500KB limit
             
-            if (limitedContent.length < 100) {
+            console.log('Extracted content length:', content.length);
+            
+            if (content.length < 50) {
                 return null;
             }
 
             return {
-                isPolicyPage: isPolicyPage,
-                content: limitedContent,
+                isPolicyPage: true,
+                content: content,
                 url: window.location.href,
                 title: document.title,
                 extractedAt: new Date().toISOString()
@@ -296,26 +326,48 @@ class SecureBackgroundService {
 
     generateBasicSummary(text) {
         // Simple summary generation
-        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 20);
-        const keywords = ['collect', 'share', 'cookie', 'delete', 'secure', 'retain'];
+        const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 30);
+        const keywords = [
+            { word: 'collect', desc: 'Data collection practices' },
+            { word: 'share', desc: 'Information sharing policies' },
+            { word: 'cookie', desc: 'Cookie and tracking usage' },
+            { word: 'delete', desc: 'Data deletion and user rights' },
+            { word: 'secure', desc: 'Security measures and protection' },
+            { word: 'retain', desc: 'Data retention policies' }
+        ];
         
         const summaryItems = [];
-        keywords.forEach((keyword, index) => {
+        keywords.forEach((keywordObj, index) => {
             const relevantSentence = sentences.find(s => 
-                s.toLowerCase().includes(keyword)
+                s.toLowerCase().includes(keywordObj.word)
             );
             
             if (relevantSentence) {
                 summaryItems.push({
-                    id: `${keyword}_${index}`,
-                    text: relevantSentence.trim().slice(0, 200) + '...',
+                    id: `${keywordObj.word}_${index}`,
+                    text: relevantSentence.trim().slice(0, 150) + (relevantSentence.length > 150 ? '...' : ''),
                     priority: index + 1,
                     evidence: []
                 });
             }
         });
 
-        return summaryItems.slice(0, 6);
+        // Add fallback summaries if not enough found
+        if (summaryItems.length < 3) {
+            const fallbackSentences = sentences.slice(0, 5);
+            fallbackSentences.forEach((sentence, index) => {
+                if (summaryItems.length < 6) {
+                    summaryItems.push({
+                        id: `general_${index}`,
+                        text: sentence.trim().slice(0, 150) + (sentence.length > 150 ? '...' : ''),
+                        priority: index + 10,
+                        evidence: []
+                    });
+                }
+            });
+        }
+
+        return summaryItems.slice(0, 8);
     }
 
     detectBasicRedFlags(text, patterns) {
@@ -345,13 +397,15 @@ class SecureBackgroundService {
     }
 
     calculateBasicScores(text, patterns) {
-        let baseScore = 60;
+        let baseScore = 65;
         
         // Adjust based on detected patterns
         if (patterns.dataSelling.some(p => p.test(text))) baseScore -= 20;
         if (patterns.arbitration.some(p => p.test(text))) baseScore -= 15;
+        if (patterns.tracking.some(p => p.test(text))) baseScore -= 10;
         if (/GDPR|CCPA|data protection/i.test(text)) baseScore += 15;
         if (/opt.*out|unsubscribe|delete.*account/i.test(text)) baseScore += 10;
+        if (/encrypt|secure|protection/i.test(text)) baseScore += 5;
 
         const finalScore = Math.max(0, Math.min(100, baseScore));
 

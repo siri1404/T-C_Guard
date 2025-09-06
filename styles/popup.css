@@ -6,24 +6,51 @@
 }
 
 :root {
-    /* Midnight Glass Theme */
-    --bg-primary: #0B0F14;
-    --bg-secondary: #0F172A;
-    --bg-glass: rgba(255, 255, 255, 0.08);
-    --bg-glass-hover: rgba(255, 255, 255, 0.12);
-    --text-primary: #F8FAFC;
-    --text-secondary: #CBD5E1;
-    --text-muted: #64748B;
-    --accent-primary: #14B8A6;
-    --accent-warning: #F59E0B;
-    --accent-danger: #EF4444;
-    --accent-success: #22C55E;
-    --border-color: rgba(255, 255, 255, 0.1);
-    --shadow-glow: 0 0 20px rgba(20, 184, 166, 0.3);
-    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
     --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     --border-radius: 12px;
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme (Default) */
+.theme-dark {
+    --bg-primary: #0A0A0B;
+    --bg-secondary: #1A1B23;
+    --bg-tertiary: #2A2D3A;
+    --bg-glass: rgba(255, 255, 255, 0.08);
+    --bg-glass-hover: rgba(255, 255, 255, 0.12);
+    --text-primary: #FFFFFF;
+    --text-secondary: #E2E8F0;
+    --text-muted: #94A3B8;
+    --accent-primary: #3B82F6;
+    --accent-secondary: #8B5CF6;
+    --accent-warning: #F59E0B;
+    --accent-danger: #EF4444;
+    --accent-success: #10B981;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(59, 130, 246, 0.3);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.2);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Light Theme */
+.theme-light {
+    --bg-primary: #FFFFFF;
+    --bg-secondary: #F8FAFC;
+    --bg-tertiary: #F1F5F9;
+    --bg-glass: rgba(0, 0, 0, 0.05);
+    --bg-glass-hover: rgba(0, 0, 0, 0.08);
+    --text-primary: #0F172A;
+    --text-secondary: #334155;
+    --text-muted: #64748B;
+    --accent-primary: #3B82F6;
+    --accent-secondary: #8B5CF6;
+    --accent-warning: #F59E0B;
+    --accent-danger: #EF4444;
+    --accent-success: #10B981;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --border-hover: rgba(59, 130, 246, 0.3);
+    --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 body {
@@ -37,6 +64,7 @@ body {
     min-width: 380px !important;
     margin: 0;
     padding: 0;
+    transition: var(--transition);
 }
 
 .popup-container {
@@ -52,14 +80,7 @@ body {
 }
 
 .popup-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.1) 0%, transparent 50%);
-    pointer-events: none;
+    background: radial-gradient(circle at 50% 0%, var(--accent-primary)15 0%, transparent 50%);
 }
 
 /* Header */
@@ -67,7 +88,7 @@ body {
     padding: 16px;
     background: var(--bg-glass);
     backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -103,17 +124,21 @@ body {
 .theme-toggle {
     background: var(--bg-glass);
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 6px;
+    border-radius: 8px;
+    padding: 8px;
     color: var(--text-secondary);
     cursor: pointer;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .theme-toggle:hover {
     background: var(--bg-glass-hover);
-    border-color: var(--accent-primary);
+    border-color: var(--border-hover);
     color: var(--accent-primary);
+    transform: scale(1.05);
 }
 
 /* Loading State */
@@ -125,7 +150,7 @@ body {
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid var(--bg-glass);
+    border: 3px solid var(--border-color);
     border-top: 3px solid var(--accent-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -146,7 +171,7 @@ body {
 .trust-score-section {
     padding: 24px 20px;
     text-align: center;
-    background: var(--bg-glass);
+    background: linear-gradient(135deg, var(--bg-glass) 0%, var(--bg-tertiary)20 100%);
     margin: 16px;
     border-radius: var(--border-radius);
     backdrop-filter: blur(10px);
@@ -160,7 +185,7 @@ body {
 }
 
 .trust-dial {
-    filter: drop-shadow(0 0 8px rgba(20, 184, 166, 0.4));
+    filter: drop-shadow(var(--shadow-glow));
     transition: var(--transition);
 }
 
@@ -201,7 +226,7 @@ body {
 }
 
 .confidence-value {
-    color: var(--accent-primary);
+    color: var(--accent-secondary);
     font-weight: 600;
 }
 
@@ -229,18 +254,21 @@ body {
 .summary-bullet {
     background: var(--bg-glass);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 12px;
     cursor: pointer;
     transition: var(--transition);
     position: relative;
     backdrop-filter: blur(10px);
+    border-left: 3px solid transparent;
 }
 
 .summary-bullet:hover {
     background: var(--bg-glass-hover);
-    border-color: var(--accent-primary);
-    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.2);
+    border-color: var(--border-hover);
+    border-left-color: var(--accent-primary);
+    box-shadow: var(--shadow-glow);
+    transform: translateX(4px);
 }
 
 .summary-bullet-content {
@@ -265,7 +293,7 @@ body {
 /* Red Flags Section */
 .red-flags-section {
     padding: 20px;
-    border-top: 1px solid var(--border-color);
+    border-top: 2px solid var(--border-color);
 }
 
 .red-flag-card {
@@ -276,11 +304,13 @@ body {
     margin-bottom: 8px;
     cursor: pointer;
     transition: var(--transition);
+    border-left: 3px solid var(--accent-danger);
 }
 
 .red-flag-card:hover {
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.08) 100%);
     border-color: rgba(239, 68, 68, 0.5);
+    transform: translateX(4px);
 }
 
 .red-flag-header {
@@ -314,7 +344,7 @@ body {
 /* Actions Section */
 .actions-section {
     padding: 20px;
-    border-top: 1px solid var(--border-color);
+    border-top: 2px solid var(--border-color);
 }
 
 .action-buttons {
@@ -326,7 +356,7 @@ body {
 .action-btn {
     flex: 1;
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: 10px;
     border: none;
     font-weight: 600;
     font-size: 12px;
@@ -336,26 +366,31 @@ body {
     justify-content: center;
     gap: 6px;
     transition: var(--transition);
+    position: relative;
+    overflow: hidden;
 }
 
 .accept-btn {
-    background: var(--accent-success);
+    background: linear-gradient(135deg, var(--accent-success) 0%, #059669 100%);
     color: white;
 }
 
 .accept-btn:hover {
-    background: #16A34A;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+    background: linear-gradient(135deg, #059669 0%, var(--accent-success) 100%);
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4);
+    transform: translateY(-2px);
 }
 
 .reject-btn {
-    background: var(--accent-danger);
+    background: linear-gradient(135deg, var(--accent-danger) 0%, #DC2626 100%);
     color: white;
 }
 
 .reject-btn:hover {
     background: #DC2626;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    background: linear-gradient(135deg, #DC2626 0%, var(--accent-danger) 100%);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
 }
 
 .secondary-actions {
@@ -367,8 +402,8 @@ body {
 .secondary-btn {
     background: var(--bg-glass);
     border: 1px solid var(--border-color);
-    padding: 8px 12px;
-    border-radius: 6px;
+    padding: 10px 14px;
+    border-radius: 8px;
     color: var(--text-secondary);
     font-size: 11px;
     cursor: pointer;
@@ -378,8 +413,9 @@ body {
 
 .secondary-btn:hover {
     background: var(--bg-glass-hover);
-    border-color: var(--accent-primary);
-    color: var(--accent-primary);
+    border-color: var(--border-hover);
+    color: var(--accent-secondary);
+    transform: translateY(-1px);
 }
 
 /* Error and No Policy States */
@@ -413,7 +449,7 @@ body {
 }
 
 .retry-btn {
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -424,8 +460,9 @@ body {
 }
 
 .retry-btn:hover {
-    background: #0D9488;
-    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+    background: linear-gradient(135deg, var(--accent-secondary) 0%, var(--accent-primary) 100%);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
 }
 
 /* Responsive adjustments */
