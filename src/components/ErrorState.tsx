@@ -9,7 +9,19 @@ interface ErrorStateProps {
 
 const ErrorState: React.FC<ErrorStateProps> = ({ error, onRetry, onReset }) => {
   const getErrorDetails = (error: string) => {
-    if (error.includes('No policy content found')) {
+    if (error.includes('URL does not appear to be a policy page')) {
+      return {
+        title: 'Not a Policy Page',
+        description: 'This URL doesn\'t appear to contain terms of service or privacy policy content. Please try a URL that contains policy-related information.',
+        suggestions: [
+          'Look for URLs containing "privacy", "terms", "policy", or "legal"',
+          'Try visiting the website\'s footer for policy links',
+          'Search for "Privacy Policy" or "Terms of Service" on the site',
+          'Example: https://example.com/privacy-policy or https://example.com/terms'
+        ],
+        icon: '📄'
+      };
+    } else if (error.includes('No policy content found')) {
       return {
         title: 'No Policy Found',
         description: 'We couldn\'t find policy content at this URL. The page might not contain terms of service or privacy policy text.',
